@@ -8,6 +8,11 @@ const expressLayouts = require('express-ejs-layouts');
 // to configure db
 const db = require('./config/mongoose');
 
+// passport js used for session cookie 
+const session = require('express-session');
+const passport = require('passport');
+const passportLocal = require('./config/passport-local-strategy')
+
 app.use(express.urlencoded());
 
 // cookie parser used to access cookies in the webpage to server
@@ -30,6 +35,19 @@ app.use('/', require('./routes'));
 app.set('view engine', 'ejs');
 app.set('views', './views');
 
+app.use(session({
+    name:'codeial',
+    secret:"secret",
+    saveUninitialized: false,
+    resave:false,
+    cookie:{
+        maxAge:(1000*60*100)
+    }
+}));
+
+// user controllers
+app.use(passport.initialize())
+app.use(passport.session());
 
 app.listen(port, function(err){
     if (err){
