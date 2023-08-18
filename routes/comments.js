@@ -3,10 +3,10 @@ const router = express.Router();
 const passport = require('passport');
 
 
-const postsController = require('../controllers/posts_controller');
+const commentsController = require('../controllers/comments_controller');
 
 
-router.post('/create',passport.checkAuthentication, postsController.create);
+router.post('/create',passport.checkAuthentication, commentsController.create);
 
 // router.get('/',postsController.posts);
 
