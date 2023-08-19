@@ -1,33 +1,47 @@
 const User = require('../models/user');
 
-// profile page
-// module.exports.profile = async function (req, res) {
-//     try {
-//         if (req.cookies.user_id) {
-//             const user = await User.findById(req.cookies.user_id);
+// let's keep it same as before
 
-//             if (user) {
-//                 return res.render('user_profile', {
-//                     title: "User Profile",
-//                     user: user
-//                 });
-//             } else {
-//                 return res.redirect('/users/sign-in');
-//             }
-//         } else {
-//             return res.redirect('/users/sign-in');
-//         }
-//     } catch (err) {
-//         console.log('Error in finding user by ID:', err);
-//         return res.status(500).send('Server Error');
-//     }
-// };
+module.exports.profile = async function(req, res) {
+    try {
+        const user = await User.findById(req.params.id);
 
-module.exports.profile = function(req, res){
-    return res.render('user_profile', {
-        title: 'User Profile'
-    })
-}
+        if (!user) {
+            console.log('User not found');
+            return res.redirect('/');
+        }
+
+        return res.render('user_profile', {
+            title: 'User Profile',
+            profile_user: user
+        });
+    } catch (err) {
+        console.error('Error in fetching user profile:', err);
+        return res.redirect('/');
+    }
+};
+
+
+
+module.exports.update = async function(req, res) {
+    try {
+        if (req.user.id === req.params.id) {
+            const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body);
+
+            if (!updatedUser) {
+                console.log('User not found');
+                return res.redirect('back');
+            }
+
+            return res.redirect('back');
+        } else {
+            return res.status(401).send('Unauthorized');
+        }
+    } catch (err) {
+        console.error('Error in updating user:', err);
+        return res.redirect('back');
+    }
+};
 
 
 // render the sign up page
@@ -54,116 +68,40 @@ module.exports.signIn = function(req, res){
     })
 }
 
-
 // get the sign up data
-// module.exports.create =  function(req, res){
-//     if (req.body.password != req.body.confirm_password){
-//         return res.redirect('back');
-//     }
-
-//     User.findOne({email: req.body.email}, function(err, user){
-//         if(err){console.log('error in finding user in signing up'); return}
-
-//         if (!user){
-//             User.create(req.body, function(err, user){
-//                 if(err){console.log('error in creating user while signing up'); return}
-
-//                 return res.redirect('/users/sign-in');
-//             })
-//         }else{
-//             return res.redirect('back');
-//         }
-
-//     });
-// }
-
-
-// latest workig
-
-// module.exports.create = async function (req, res) {
-//     if (req.body.password != req.body.confirm_password) {
-//         return res.redirect('back');
-//     }
-
-//     try {
-//         const user = await User.findOne({ email: req.body.email });
-//         if (!user) {
-//             const newUser = await User.create(req.body);
-//             return res.redirect('/users/sign-in');
-//         } else {
-//             return res.redirect('back');
-//         }
-//     } catch (err) {
-//         console.log('Error in finding/creating user while signing up:', err);
-//         return res.status(500).send('Server Error');
-//     }
-// }
-
-module.exports.create = async function(req, res){
-    if (req.body.password != req.body.confirm_password){
+module.exports.create = async function(req, res) {
+    if (req.body.password != req.body.confirm_password) {
         return res.redirect('back');
     }
 
     try {
-        const user = await User.findOne({email: req.body.email});
-        if (!user){
-            try{
-                const newUser = await User.create(req.body);
-                return res.redirect('/users/sign-in');
-            } catch(err){
-                console.log('error in creating user while signing up'); 
-                return;
-            }}
-        else {
+        const existingUser = await User.findOne({ email: req.body.email });
+
+        if (!existingUser) {
+            await User.create(req.body);
+            return res.redirect('/users/sign-in');
+        } else {
             return res.redirect('back');
-        }}
-    catch (err) {
-        console.log('error in finding user in signing up'); 
-        return;
-    }            
+        }
+    } catch (err) {
+        console.error('Error during user creation:', err);
+        return res.redirect('back');
+    }
 };
- 
 
 // sign in and create a session for the user
-// module.exports.createSession = async function(req, res){
-//     // steps
-//     // find the user
-//     try{
-//         const user = await User.findOne({email: req.body.email});
-//         // handle user found
-//         if (user){
-//             // check password matches or not
-//             if (user.password != req.body.password){
-//                 return res.redirect('back');
-//             }
-//             // handle session creation
-//             res.cookie('user_id',user.id);
-//             return res.redirect('/users/profile');
-            
-//         }
-//         else{
-//             // handle user not found
-//             return res.redirect('back');
-//         }
-//     }
-//     catch (err){
-//         console.log('error in finding user in signing up'); 
-//         return
-//     }
-
-// }
-
-module.exports.createSession = function(req,res){
+module.exports.createSession = function(req, res){
+    req.flash('success','Logged in Sucessfully');
     return res.redirect('/');
-};
+}
 
-
-module.exports.destroySession = function(req, res, next){
-    req.logout(function(err){
-        if (err){
-            return next(err);
+module.exports.destroySession = function(req, res) {
+    req.logout(function(err) {
+        if (err) {
+            console.error('Error during logout:', err);
         }
+
+        req.flash('success', 'You have logged out');
         return res.redirect('/');
     });
-
-}
+};
